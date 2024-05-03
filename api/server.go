@@ -22,22 +22,24 @@ func NewApiServer(listenAddr string, store *storage.MySqlStorage) *Server {
 }
 
 func (s *Server) Start() error {
-	http.HandleFunc("/fruit", s.handleGetFruitByName) // Example route
-	http.HandleFunc("/addFruit", s.handleAddFruit)
+	http.HandleFunc("/getFruit", s.handleGetFruitByName) // GET
+	http.HandleFunc("/addFruit", s.handleAddFruit)       // POST
 	return http.ListenAndServe(s.listenAddr, nil)
 }
+
+// HANDLERS //
 
 func (s *Server) handleGetFruitByName(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
 
+		// decoding body
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "could not read request body"})
 			return
 		}
-
 		var request types.GetFruitByNameRequest
 		err = json.Unmarshal(body, &request) // decode into the struct
 		if err != nil {
@@ -45,10 +47,8 @@ func (s *Server) handleGetFruitByName(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fruitName := request.Name
-
 		// find the fruit in the database
-		fruit, err := s.store.GetFruitByName(fruitName)
+		fruit, err := s.store.GetFruitByName(request.Name)
 		if err != nil {
 			WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "could not find fruit"})
 			return
@@ -63,13 +63,37 @@ func (s *Server) handleGetFruitByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleAddFruit(w http.ResponseWriter, r *http.Request) {
-	// TODO : use request body to specify fruit and count
-	err := s.store.AddFruit("bananas", 8)
-	if err != nil {
-		WriteJSON(w, http.StatusBadRequest, "could not add fruit")
+
+	switch r.Method {
+	case "POST":
+
+		// decoding body
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "could not read request body"})
+			return
+		}
+		var request types.AddFruitRequest
+		err = json.Unmarshal(body, &request) // decode into the struct
+		if err != nil {
+			WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body format"})
+			return
+		}
+
+		// adding fruit to database
+		err = s.store.AddFruit(request.Name, request.Count)
+		if err != nil {
+			WriteJSON(w, http.StatusBadRequest, "could not add fruit")
+			return
+		}
+		WriteJSON(w, http.StatusOK, map[string]string{"message": "fruit added to database"})
+		return
 	}
-	WriteJSON(w, http.StatusOK, "added")
+
+	WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 }
+
+// HELPER //
 
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
 	w.Header().Set("Content-Type", "application/json")
