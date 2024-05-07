@@ -3,6 +3,7 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+	"os"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/vsomera/scratch-api/types"
@@ -13,11 +14,21 @@ type MySqlStorage struct {
 }
 
 func NewMySqlStore() (*MySqlStorage, error) {
-	db, err := sql.Open("mysql", "root:<database_password>@tcp(127.0.0.1:3306)/test") // fix error handling
+	// attempt mysql connection
+	dbPassword := os.Getenv("DB_PASSWORD")
+	connString := fmt.Sprintf("root:%s@tcp(127.0.0.1:3306)/fruits", dbPassword) // connection string
+	db, err := sql.Open("mysql", connString)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error connecting to MySQL ❌ : %v", err)
 	}
-	fmt.Println("Connected to MySQL")
+
+	// ping the database to check if connected
+	if err := db.Ping(); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("error pinging MySQL database ❌ : %v", err)
+	}
+
+	fmt.Println("Connected to MySQL database ✔️")
 	return &MySqlStorage{db: db}, nil
 }
 
