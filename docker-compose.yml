@@ -4,9 +4,9 @@ services:
   mysql_db: 
     image: "mysql:latest"
     environment:
-      MYSQL_ROOT_PASSWORD: <database_password>
+      MYSQL_ROOT_PASSWORD: Password123!
     volumes:
-      - db-data:/foo
+      - db-data:/var/lib/mysql
       - ./scripts:/docker-entrypoint-initdb.d 
     ports:
       - "3306:3306"
