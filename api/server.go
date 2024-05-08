@@ -11,10 +11,10 @@ import (
 
 type Server struct {
 	listenAddr string
-	store      *storage.MySqlStorage
+	store      storage.Storage
 }
 
-func NewApiServer(listenAddr string, store *storage.MySqlStorage) *Server {
+func NewApiServer(listenAddr string, store storage.Storage) *Server {
 	return &Server{
 		listenAddr: listenAddr,
 		store:      store,

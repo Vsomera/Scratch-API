@@ -9,6 +9,11 @@ import (
 	"github.com/vsomera/scratch-api/types"
 )
 
+type Storage interface {
+	GetFruitByName(name string) (*types.Fruit, error)
+	AddFruit(name string, count int) error
+}
+
 type MySqlStorage struct {
 	db *sql.DB
 }
