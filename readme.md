@@ -1,7 +1,7 @@
 
 # Fruits API 🍉🍊🍍
  
-REST API Build from scratch with a MySQL database
+REST API built from scratch with a MySQL database
 
 ## Configuration 🔧
 
