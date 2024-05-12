@@ -10,7 +10,7 @@ import (
 )
 
 type Storage interface {
-	GetFruitByName(name string) (*types.Fruit, error)
+	GetAllFruits() ([]*types.Fruit, error)
 	AddFruit(name string, count int) error
 }
 
@@ -33,25 +33,38 @@ func NewMySqlStore() (*MySqlStorage, error) {
 		return nil, fmt.Errorf("error pinging MySQL database ❌ : %v", err)
 	}
 
+	// defer db.Close() // TODO : implement DB connections to close and open
+
 	fmt.Println("Connected to MySQL database ✔️")
 	return &MySqlStorage{db: db}, nil
 }
 
-// GetFruitByName queries the database by fruit name and returns the fruit row that matches the fruit name.
-func (s *MySqlStorage) GetFruitByName(name string) (*types.Fruit, error) {
-	// Write SQL query to select the fruit row based on the fruit name
-	query := "SELECT id, name, count FROM fruits WHERE name = ?"
+// GetAllFruits returns all fruits from the database
+func (s *MySqlStorage) GetAllFruits() ([]*types.Fruit, error) {
+	// Write SQL query to select all fruit rows
+	query := "SELECT id, name, count FROM fruits"
 
-	// Execute the SQL query and retrieve the result
-	row := s.db.QueryRow(query, name)
-
-	var fruit types.Fruit
-	err := row.Scan(&fruit.ID, &fruit.Name, &fruit.Count)
+	rows, err := s.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	return &fruit, nil
+	var fruits []*types.Fruit
+	for rows.Next() {
+		var fruit types.Fruit
+		err := rows.Scan(&fruit.ID, &fruit.Name, &fruit.Count)
+		if err != nil {
+			return nil, err
+		}
+		fruits = append(fruits, &fruit)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return fruits, nil
 }
 
 // AddFruit queries database to check if a row with the same name exists, if exists it adds the count to the existing row, if not it creates a new row with the name and count
