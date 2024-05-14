@@ -12,6 +12,7 @@ import (
 type Storage interface {
 	GetAllFruits() ([]*types.Fruit, error)
 	AddFruit(name string, count int) error
+	EditFruit(name string, count int) error
 }
 
 type MySqlStorage struct {
@@ -41,7 +42,7 @@ func NewMySqlStore() (*MySqlStorage, error) {
 
 // GetAllFruits returns all fruits from the database
 func (s *MySqlStorage) GetAllFruits() ([]*types.Fruit, error) {
-	// Write SQL query to select all fruit rows
+	// select all rows in fruits table
 	query := "SELECT id, name, count FROM fruits"
 
 	rows, err := s.db.Query(query)
@@ -50,6 +51,7 @@ func (s *MySqlStorage) GetAllFruits() ([]*types.Fruit, error) {
 	}
 	defer rows.Close()
 
+	// put returned rows int fruits slice
 	var fruits []*types.Fruit
 	for rows.Next() {
 		var fruit types.Fruit
@@ -95,4 +97,22 @@ func (s *MySqlStorage) AddFruit(name string, count int) error {
 		return fmt.Errorf("error adding fruit: %w", err)
 	}
 	return nil
+}
+
+// EditFruit queries db and checks if a fruit by the same name exists, then edits the count of that fruit
+func (s *MySqlStorage) EditFruit(id string, count int) error {
+	// check if the fruit exists
+	err := s.db.QueryRow("SELECT id FROM fruits WHERE id = ?", id).Scan(&id)
+
+	if err != nil {
+		return fmt.Errorf("error checking existing fruit: %w", err)
+	} else {
+		// edit the existing count in database with the new count
+		_, err := s.db.Exec("UPDATE fruits SET count = ? WHERE id = ?", count, id)
+		if err != nil {
+			return fmt.Errorf("error editing fruit count: %s", err)
+		}
+		return nil
+	}
+
 }
