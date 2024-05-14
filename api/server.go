@@ -24,9 +24,10 @@ func NewApiServer(listenAddr string, store storage.Storage) *Server {
 }
 
 func (s *Server) Start() error {
-	http.HandleFunc("/getFruits", s.handleGetAllFruits) // GET
-	http.HandleFunc("/addFruit", s.handleAddFruit)      // POST
-	http.HandleFunc("/editFruit/", s.handleEditFruit)   // PUT ( /editFruit/{id} )
+	http.HandleFunc("/getFruits", s.handleGetAllFruits)   // GET
+	http.HandleFunc("/addFruit", s.handleAddFruit)        // POST
+	http.HandleFunc("/editFruit/", s.handleEditFruit)     // PUT ( /editFruit/{id} )
+	http.HandleFunc("/deleteFruit/", s.handleDeleteFruit) // DELETE ( /deleteFruit/{id})
 	return http.ListenAndServe(s.listenAddr, nil)
 }
 
@@ -124,6 +125,36 @@ func (s *Server) handleEditFruit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+}
+
+func (s *Server) handleDeleteFruit(w http.ResponseWriter, r *http.Request) {
+	// check if fruit exists in database by id
+	// if fruit exists delete the fruit
+	// return 200
+
+	switch r.Method {
+	case "DELETE":
+
+		// extract id value from URL
+		urlParts := strings.Split(r.URL.Path, "/")
+		fruitId := urlParts[len(urlParts)-1]
+		if fruitId == "" {
+			errMsg := fmt.Sprintf("invalid URL missing /%s/{id}", urlParts[1])
+			WriteJSON(w, http.StatusBadRequest, map[string]string{"error": errMsg})
+			return
+		}
+
+		// delete fruit in the database
+		err := s.store.DeleteFruit(fruitId)
+		if err != nil {
+			WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return
+		}
+		WriteJSON(w, http.StatusOK, map[string]string{"message": "fruit deleted"})
+		return
+
+	}
 	WriteJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 }
 

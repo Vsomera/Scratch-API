@@ -12,7 +12,8 @@ import (
 type Storage interface {
 	GetAllFruits() ([]*types.Fruit, error)
 	AddFruit(name string, count int) error
-	EditFruit(name string, count int) error
+	EditFruit(id string, count int) error
+	DeleteFruit(id string) error
 }
 
 type MySqlStorage struct {
@@ -115,4 +116,21 @@ func (s *MySqlStorage) EditFruit(id string, count int) error {
 		return nil
 	}
 
+}
+
+// Delete fruit queries db by id and deletes the fruit
+func (s *MySqlStorage) DeleteFruit(id string) error {
+
+	err := s.db.QueryRow("SELECT id FROM fruits WHERE id = ?", id).Scan(&id)
+
+	if err != nil {
+		return fmt.Errorf("error checking existing fruit: %w", err)
+	} else {
+		// delete fruit row that matches the passed in id param
+		_, err = s.db.Exec("DELETE FROM fruits WHERE id = ?", id)
+		if err != nil {
+			return fmt.Errorf("error deleting fruit: %s", err)
+		}
+	}
+	return nil
 }
