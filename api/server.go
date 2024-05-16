@@ -76,7 +76,7 @@ func (s *Server) handleAddFruit(w http.ResponseWriter, r *http.Request) {
 		// adding fruit to database
 		err = s.store.AddFruit(request.Name, request.Count)
 		if err != nil {
-			WriteJSON(w, http.StatusBadRequest, "could not add fruit")
+			WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
 		}
 		WriteJSON(w, http.StatusOK, map[string]string{"message": "fruit added to database"})

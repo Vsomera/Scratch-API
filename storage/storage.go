@@ -74,21 +74,15 @@ func (s *MySqlStorage) GetAllFruits() ([]*types.Fruit, error) {
 func (s *MySqlStorage) AddFruit(name string, count int) error {
 
 	// check if a row with the same name already exists
-	var existingCount int
-	err := s.db.QueryRow("SELECT count FROM fruits WHERE name = ?", name).Scan(&existingCount)
+	var existingName string
+	err := s.db.QueryRow("SELECT name FROM fruits WHERE name = ?", name).Scan(&existingName)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return fmt.Errorf("error checking existing fruit: %w", err)
+			return fmt.Errorf("error checking existing fruit %w", err)
 		}
-		// if no rows found, fruit doesn't exist => proceed to add a new row
-	} else {
-		// if a row with the same name exists => increase the count and return
-		newCount := existingCount + count
-		_, err := s.db.Exec("UPDATE fruits SET count = ? WHERE name = ?", newCount, name)
-		if err != nil {
-			return fmt.Errorf("error updating existing fruit count: %w", err)
-		}
-		return nil
+	}
+	if existingName != "" {
+		return fmt.Errorf("fruit already exists")
 	}
 
 	// add a new row with the fruit and the count
@@ -106,7 +100,7 @@ func (s *MySqlStorage) EditFruit(id string, count int) error {
 	err := s.db.QueryRow("SELECT id FROM fruits WHERE id = ?", id).Scan(&id)
 
 	if err != nil {
-		return fmt.Errorf("error checking existing fruit: %w", err)
+		return fmt.Errorf("error editing existing fruit %w", err)
 	} else {
 		// edit the existing count in database with the new count
 		_, err := s.db.Exec("UPDATE fruits SET count = ? WHERE id = ?", count, id)
